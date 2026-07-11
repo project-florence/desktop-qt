@@ -21,9 +21,19 @@ qt_add_qml_module(appproject_florence_desktop
     URI project_florence_desktop
     QML_FILES
         Main.qml
+        SettingsScreen.qml
     SOURCES
         src/api/ApiClient.h
         src/api/ApiClient.cpp
+        src/i18n/TranslationManager.h
+        src/i18n/TranslationManager.cpp
+)
+
+qt_add_resources(appproject_florence_desktop "i18n"
+    PREFIX "/i18n"
+    FILES
+        i18n/en.json
+        i18n/tr.json
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -39,6 +49,7 @@ set_target_properties(appproject_florence_desktop PROPERTIES
 
 target_include_directories(appproject_florence_desktop PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/i18n
 )
 
 target_link_libraries(appproject_florence_desktop

@@ -11,11 +11,12 @@ ApplicationWindow {
     visible: true
     title: "Project Florence"
 
-    // --- API Client (C++ tarafından QML'ye expose edildi) ---
+    // Dil değişikliğini tüm bağlamalara otomatik yansıtmak için
+
+    // --- API Client ---
     ApiClient {
         id: api
-        useMock: true       // backend yokken mock data kullan
-        // baseUrl: "http://localhost:7055"   // backend gelince aktif et
+        useMock: true
     }
 
     // Tema renkleri
@@ -27,7 +28,7 @@ ApplicationWindow {
     property color gainColor: "#4CAF50"
     property color lossColor: "#f44336"
 
-    // Ham şirket verileri (backend gelince api.get("/api/v1/bist/companies") ile çekilecek)
+    // Ham şirket verileri
     property var allCompanies: [
         { ticker: "ASELS", name: "Aselsan Elektronik Sanayi ve Ticaret A.Ş.", city: "Ankara" },
         { ticker: "THYAO", name: "Türk Hava Yolları A.O.", city: "İstanbul" },
@@ -53,7 +54,7 @@ ApplicationWindow {
     property bool showDetail: false
     property var selectedCompany: ({})
     property string selectedTicker: ""
-    property var companyInfo: ({})    // API'den gelen cevap
+    property var companyInfo: ({})
     property bool loadingInfo: false
 
     function filterCompanies() {
@@ -82,7 +83,6 @@ ApplicationWindow {
         selectedCompany = { ticker: ticker, name: name, city: city }
         companyInfo = ({})
 
-        // API'den şirket bilgilerini çek
         loadingInfo = true
         api.get("/api/v1/companies/info/" + ticker, function(response) {
             companyInfo = response
@@ -97,13 +97,11 @@ ApplicationWindow {
         companyInfo = ({})
     }
 
-    // Fiyat formatı
     function fmtPrice(val) {
         if (val === undefined || val === null) return "—"
         return Number(val).toLocaleString(Qt.locale("tr_TR"), "f", 2)
     }
 
-    // Para formatı (büyük sayılar)
     function fmtLarge(val) {
         if (val === undefined || val === null) return "—"
         var n = Number(val)
@@ -137,7 +135,7 @@ ApplicationWindow {
                 spacing: 8
 
                 Label {
-                    text: "Project Florence"
+                    text: TranslationManager.currentLanguage ? TranslationManager.tr("app.title") : ""
                     font.pixelSize: 18
                     font.bold: true
                     color: textColor
@@ -145,7 +143,10 @@ ApplicationWindow {
                 }
 
                 Button {
-                    text: lightMode ? "☽ Dark" : "☀ Light"
+                    text: {
+                        TranslationManager.currentLanguage;
+                        return lightMode ? "☽ " + TranslationManager.tr("dark") : "☀ " + TranslationManager.tr("light");
+                    }
                     onClicked: lightMode = !lightMode
 
                     contentItem: Text {
@@ -174,7 +175,11 @@ ApplicationWindow {
             }
 
             TabButton {
-                text: "Companies"
+                text: TranslationManager.currentLanguage ? TranslationManager.tr("companies") : ""
+                width: 140
+            }
+            TabButton {
+                text: TranslationManager.currentLanguage ? TranslationManager.tr("settings") : ""
                 width: 140
             }
         }
@@ -186,7 +191,7 @@ ApplicationWindow {
             Layout.fillHeight: true
             currentIndex: tabBar.currentIndex
 
-            // --- Sekme 1: Companies ---
+            // --- Sekme 0: Companies ---
             Item {
                 id: companiesTab
                 clip: true
@@ -201,7 +206,7 @@ ApplicationWindow {
                     TextField {
                         id: searchField
                         Layout.fillWidth: true
-                        placeholderText: "Search ticker or company name..."
+                        placeholderText: TranslationManager.currentLanguage ? TranslationManager.tr("search.placeholder") : ""
                         font.pixelSize: 15
                         leftPadding: 12
                         rightPadding: 12
@@ -278,7 +283,7 @@ ApplicationWindow {
 
                         Label {
                             anchors.centerIn: parent
-                            text: "No companies found"
+                            text: TranslationManager.currentLanguage ? TranslationManager.tr("no.companies") : ""
                             font.pixelSize: 16
                             color: lightMode ? "#888888" : "#666666"
                             visible: companyModel.count === 0
@@ -293,9 +298,8 @@ ApplicationWindow {
                     spacing: 16
                     visible: showDetail
 
-                    // Geri butonu (sabit üstte)
                     Button {
-                        text: "← Back to list"
+                        text: TranslationManager.currentLanguage ? TranslationManager.tr("back.to.list") : ""
                         flat: true
 
                         contentItem: Text {
@@ -314,7 +318,6 @@ ApplicationWindow {
                         onClicked: closeDetail()
                     }
 
-                    // Kaydırılabilir içerik alanı
                     ScrollView {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -326,7 +329,6 @@ ApplicationWindow {
                             width: parent.width
                             spacing: 16
 
-                            // Şirket başlık kartı
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 80
@@ -391,19 +393,16 @@ ApplicationWindow {
                                 }
                             }
 
-                            // Yükleme göstergesi
                             BusyIndicator {
                                 Layout.alignment: Qt.AlignHCenter
                                 running: loadingInfo
                                 visible: loadingInfo
                             }
 
-                            // Bilgi kartları (dikey: dar ekranda üst üste)
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 12
 
-                                // --- Market Data Kartı ---
                                 Rectangle {
                                     id: marketCard
                                     Layout.fillWidth: true
@@ -422,21 +421,20 @@ ApplicationWindow {
                                         spacing: 4
 
                                         Label {
-                                            text: "Market Data"
+                                            text: TranslationManager.currentLanguage ? TranslationManager.tr("market.data") : ""
                                             font.pixelSize: 11
                                             font.bold: true
                                             color: lightMode ? "#888888" : "#aaaaaa"
                                         }
 
-                                        InfoRow { label: "Price"; value: fmtPrice(companyInfo.market ? companyInfo.market.currentPrice : undefined) }
-                                        InfoRow { label: "Market Cap"; value: fmtLarge(companyInfo.market ? companyInfo.market.marketCap : undefined) }
-                                        InfoRow { label: "Day Range"; value: fmtPrice(companyInfo.market ? companyInfo.market.dayLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.dayHigh : undefined) }
-                                        InfoRow { label: "Volume"; value: fmtLarge(companyInfo.market ? companyInfo.market.regularMarketVolume : undefined) }
-                                        InfoRow { label: "52W Range"; value: fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekHigh : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("price") : ""; value: fmtPrice(companyInfo.market ? companyInfo.market.currentPrice : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("market.cap") : ""; value: fmtLarge(companyInfo.market ? companyInfo.market.marketCap : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("day.range") : ""; value: fmtPrice(companyInfo.market ? companyInfo.market.dayLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.dayHigh : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("volume") : ""; value: fmtLarge(companyInfo.market ? companyInfo.market.regularMarketVolume : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("range.52w") : ""; value: fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekHigh : undefined) }
                                     }
                                 }
 
-                                // --- Valuation Kartı ---
                                 Rectangle {
                                     id: valuationCard
                                     Layout.fillWidth: true
@@ -455,21 +453,20 @@ ApplicationWindow {
                                         spacing: 4
 
                                         Label {
-                                            text: "Valuation"
+                                            text: TranslationManager.currentLanguage ? TranslationManager.tr("valuation") : ""
                                             font.pixelSize: 11
                                             font.bold: true
                                             color: lightMode ? "#888888" : "#aaaaaa"
                                         }
 
-                                        InfoRow { label: "P/E (TTM)"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.trailingPE : undefined) }
-                                        InfoRow { label: "Forward P/E"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.forwardPE : undefined) }
-                                        InfoRow { label: "P/B"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.priceToBook : undefined) }
-                                        InfoRow { label: "Div. Yield"; value: fmtPercent(companyInfo.valuation ? companyInfo.valuation.dividendYield : undefined) }
-                                        InfoRow { label: "Target Price"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.targetMeanPrice : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("pe.ttm") : ""; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.trailingPE : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("forward.pe") : ""; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.forwardPE : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("price.to.book") : ""; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.priceToBook : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("div.yield") : ""; value: fmtPercent(companyInfo.valuation ? companyInfo.valuation.dividendYield : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("target.price") : ""; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.targetMeanPrice : undefined) }
                                     }
                                 }
 
-                                // --- Financials Kartı ---
                                 Rectangle {
                                     id: financialsCard
                                     Layout.fillWidth: true
@@ -488,17 +485,17 @@ ApplicationWindow {
                                         spacing: 4
 
                                         Label {
-                                            text: "Financials"
+                                            text: TranslationManager.currentLanguage ? TranslationManager.tr("financials") : ""
                                             font.pixelSize: 11
                                             font.bold: true
                                             color: lightMode ? "#888888" : "#aaaaaa"
                                         }
 
-                                        InfoRow { label: "Revenue"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.totalRevenue : undefined) }
-                                        InfoRow { label: "Net Income"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.netIncomeToCommon : undefined) }
-                                        InfoRow { label: "Profit Margin"; value: fmtPercent(companyInfo.financials ? companyInfo.financials.profitMargins : undefined) }
-                                        InfoRow { label: "Revenue Growth"; value: fmtPercent(companyInfo.financials ? companyInfo.financials.revenueGrowth : undefined) }
-                                        InfoRow { label: "EBITDA"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.ebitda : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("revenue") : ""; value: fmtLarge(companyInfo.financials ? companyInfo.financials.totalRevenue : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("net.income") : ""; value: fmtLarge(companyInfo.financials ? companyInfo.financials.netIncomeToCommon : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("profit.margin") : ""; value: fmtPercent(companyInfo.financials ? companyInfo.financials.profitMargins : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("revenue.growth") : ""; value: fmtPercent(companyInfo.financials ? companyInfo.financials.revenueGrowth : undefined) }
+                                        InfoRow { label: TranslationManager.currentLanguage ? TranslationManager.tr("ebitda") : ""; value: fmtLarge(companyInfo.financials ? companyInfo.financials.ebitda : undefined) }
                                     }
                                 }
                             }
@@ -506,10 +503,19 @@ ApplicationWindow {
                     }
                 }
             }
+
+            // --- Sekme 1: Settings ---
+            SettingsScreen {
+                surfaceColor: window.surfaceColor
+                textColor: window.textColor
+                accentColor: window.accentColor
+                currentLightMode: window.lightMode
+                onLightModeToggled: window.lightMode = !window.lightMode
+            }
         }
     }
 
-    // ----- Yardımcı Bileşen: Bilgi satırı (label sol, değer sağa dayalı) -----
+    // ----- InfoRow bileşeni -----
     component InfoRow: RowLayout {
         property string label: ""
         property string value: "—"
