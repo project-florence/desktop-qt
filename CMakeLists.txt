@@ -30,7 +30,7 @@ qt_add_qml_module(appproject_florence_desktop
 )
 
 qt_add_resources(appproject_florence_desktop "i18n"
-    PREFIX "/i18n"
+    PREFIX "/"
     FILES
         i18n/en.json
         i18n/tr.json
