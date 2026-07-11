@@ -293,7 +293,7 @@ ApplicationWindow {
                     spacing: 16
                     visible: showDetail
 
-                    // Geri butonu
+                    // Geri butonu (sabit üstte)
                     Button {
                         text: "← Back to list"
                         flat: true
@@ -314,155 +314,193 @@ ApplicationWindow {
                         onClicked: closeDetail()
                     }
 
-                    // Şirket başlık kartı
-                    Rectangle {
+                    // Kaydırılabilir içerik alanı
+                    ScrollView {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 80
-                        radius: 10
-                        color: surfaceColor
+                        Layout.fillHeight: true
+                        clip: true
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 20
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                        ColumnLayout {
+                            width: parent.width
                             spacing: 16
 
-                            Label {
-                                text: selectedTicker
-                                font.pixelSize: 28
-                                font.bold: true
-                                color: accentColor
+                            // Şirket başlık kartı
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 80
+                                radius: 10
+                                color: surfaceColor
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 20
+                                    spacing: 16
+
+                                    Label {
+                                        text: selectedTicker
+                                        font.pixelSize: 28
+                                        font.bold: true
+                                        color: accentColor
+                                    }
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 4
+
+                                        Label {
+                                            text: companyInfo.name || selectedCompany.name || ""
+                                            font.pixelSize: 16
+                                            color: textColor
+                                            Layout.fillWidth: true
+                                            wrapMode: Text.WordWrap
+                                        }
+
+                                        Label {
+                                            text: {
+                                                var sec = companyInfo.sector || ""
+                                                var ind = companyInfo.industry || ""
+                                                return sec ? sec + (ind ? " · " + ind : "") : (selectedCompany.city || "")
+                                            }
+                                            font.pixelSize: 13
+                                            color: lightMode ? "#888888" : "#aaaaaa"
+                                        }
+                                    }
+
+                                    ColumnLayout {
+                                        spacing: 2
+                                        Layout.alignment: Qt.AlignVCenter
+                                        visible: !loadingInfo && companyInfo.market !== undefined
+
+                                        Label {
+                                            text: fmtPrice(companyInfo.market ? companyInfo.market.currentPrice : undefined)
+                                            font.pixelSize: 24
+                                            font.bold: true
+                                            color: textColor
+                                            Layout.alignment: Qt.AlignRight
+                                        }
+
+                                        Label {
+                                            text: companyInfo.currency || "TRY"
+                                            font.pixelSize: 11
+                                            color: lightMode ? "#888888" : "#aaaaaa"
+                                            Layout.alignment: Qt.AlignRight
+                                        }
+                                    }
+                                }
                             }
 
+                            // Yükleme göstergesi
+                            BusyIndicator {
+                                Layout.alignment: Qt.AlignHCenter
+                                running: loadingInfo
+                                visible: loadingInfo
+                            }
+
+                            // Bilgi kartları (dikey: dar ekranda üst üste)
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 4
+                                spacing: 12
 
-                                Label {
-                                    text: companyInfo.name || selectedCompany.name || ""
-                                    font.pixelSize: 16
-                                    color: textColor
+                                // --- Market Data Kartı ---
+                                Rectangle {
+                                    id: marketCard
                                     Layout.fillWidth: true
-                                    wrapMode: Text.WordWrap
-                                }
+                                    radius: 10
+                                    color: surfaceColor
+                                    height: marketContent.implicitHeight + 20
 
-                                Label {
-                                    text: {
-                                        var sec = companyInfo.sector || ""
-                                        var ind = companyInfo.industry || ""
-                                        return sec ? sec + (ind ? " · " + ind : "") : (selectedCompany.city || "")
+                                    ColumnLayout {
+                                        id: marketContent
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 10
+                                        anchors.topMargin: 10
+                                        spacing: 4
+
+                                        Label {
+                                            text: "Market Data"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: lightMode ? "#888888" : "#aaaaaa"
+                                        }
+
+                                        InfoRow { label: "Price"; value: fmtPrice(companyInfo.market ? companyInfo.market.currentPrice : undefined) }
+                                        InfoRow { label: "Market Cap"; value: fmtLarge(companyInfo.market ? companyInfo.market.marketCap : undefined) }
+                                        InfoRow { label: "Day Range"; value: fmtPrice(companyInfo.market ? companyInfo.market.dayLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.dayHigh : undefined) }
+                                        InfoRow { label: "Volume"; value: fmtLarge(companyInfo.market ? companyInfo.market.regularMarketVolume : undefined) }
+                                        InfoRow { label: "52W Range"; value: fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekHigh : undefined) }
                                     }
-                                    font.pixelSize: 13
-                                    color: lightMode ? "#888888" : "#aaaaaa"
-                                }
-                            }
-
-                            // Güncel fiyat (varsa)
-                            Label {
-                                text: loadingInfo ? "..." : fmtPrice(companyInfo.market ? companyInfo.market.currentPrice : undefined)
-                                font.pixelSize: 24
-                                font.bold: true
-                                color: textColor
-                                visible: !loadingInfo && companyInfo.market !== undefined
-                            }
-                        }
-                    }
-
-                    // Yükleme göstergesi
-                    BusyIndicator {
-                        Layout.alignment: Qt.AlignHCenter
-                        running: loadingInfo
-                        visible: loadingInfo
-                    }
-
-                    // Bilgi kartları
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
-
-                        // --- Market Data Kartı ---
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 140
-                            radius: 10
-                            color: surfaceColor
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 14
-                                spacing: 6
-
-                                Label {
-                                    text: "Market Data"
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    color: lightMode ? "#888888" : "#aaaaaa"
                                 }
 
-                                Item { Layout.preferredHeight: 4 }
+                                // --- Valuation Kartı ---
+                                Rectangle {
+                                    id: valuationCard
+                                    Layout.fillWidth: true
+                                    radius: 10
+                                    color: surfaceColor
+                                    height: valuationContent.implicitHeight + 20
 
-                                InfoRow { label: "Price"; value: fmtPrice(companyInfo.market ? companyInfo.market.currentPrice : undefined) }
-                                InfoRow { label: "Market Cap"; value: fmtLarge(companyInfo.market ? companyInfo.market.marketCap : undefined) }
-                                InfoRow { label: "Day Range"; value: fmtPrice(companyInfo.market ? companyInfo.market.dayLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.dayHigh : undefined) }
-                                InfoRow { label: "Volume"; value: fmtLarge(companyInfo.market ? companyInfo.market.regularMarketVolume : undefined) }
-                                InfoRow { label: "52W Range"; value: fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekLow : undefined) + " - " + fmtPrice(companyInfo.market ? companyInfo.market.fiftyTwoWeekHigh : undefined) }
-                            }
-                        }
+                                    ColumnLayout {
+                                        id: valuationContent
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 10
+                                        anchors.topMargin: 10
+                                        spacing: 4
 
-                        // --- Valuation Kartı ---
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 140
-                            radius: 10
-                            color: surfaceColor
+                                        Label {
+                                            text: "Valuation"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: lightMode ? "#888888" : "#aaaaaa"
+                                        }
 
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 14
-                                spacing: 6
-
-                                Label {
-                                    text: "Valuation"
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    color: lightMode ? "#888888" : "#aaaaaa"
+                                        InfoRow { label: "P/E (TTM)"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.trailingPE : undefined) }
+                                        InfoRow { label: "Forward P/E"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.forwardPE : undefined) }
+                                        InfoRow { label: "P/B"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.priceToBook : undefined) }
+                                        InfoRow { label: "Div. Yield"; value: fmtPercent(companyInfo.valuation ? companyInfo.valuation.dividendYield : undefined) }
+                                        InfoRow { label: "Target Price"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.targetMeanPrice : undefined) }
+                                    }
                                 }
 
-                                Item { Layout.preferredHeight: 4 }
+                                // --- Financials Kartı ---
+                                Rectangle {
+                                    id: financialsCard
+                                    Layout.fillWidth: true
+                                    radius: 10
+                                    color: surfaceColor
+                                    height: financialsContent.implicitHeight + 20
 
-                                InfoRow { label: "P/E (TTM)"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.trailingPE : undefined) }
-                                InfoRow { label: "Forward P/E"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.forwardPE : undefined) }
-                                InfoRow { label: "P/B"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.priceToBook : undefined) }
-                                InfoRow { label: "Div. Yield"; value: fmtPercent(companyInfo.valuation ? companyInfo.valuation.dividendYield : undefined) }
-                                InfoRow { label: "Target Price"; value: fmtPrice(companyInfo.valuation ? companyInfo.valuation.targetMeanPrice : undefined) }
-                            }
-                        }
+                                    ColumnLayout {
+                                        id: financialsContent
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 10
+                                        anchors.topMargin: 10
+                                        spacing: 4
 
-                        // --- Financials Kartı ---
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 140
-                            radius: 10
-                            color: surfaceColor
+                                        Label {
+                                            text: "Financials"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: lightMode ? "#888888" : "#aaaaaa"
+                                        }
 
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 14
-                                spacing: 6
-
-                                Label {
-                                    text: "Financials"
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    color: lightMode ? "#888888" : "#aaaaaa"
+                                        InfoRow { label: "Revenue"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.totalRevenue : undefined) }
+                                        InfoRow { label: "Net Income"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.netIncomeToCommon : undefined) }
+                                        InfoRow { label: "Profit Margin"; value: fmtPercent(companyInfo.financials ? companyInfo.financials.profitMargins : undefined) }
+                                        InfoRow { label: "Revenue Growth"; value: fmtPercent(companyInfo.financials ? companyInfo.financials.revenueGrowth : undefined) }
+                                        InfoRow { label: "EBITDA"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.ebitda : undefined) }
+                                    }
                                 }
-
-                                Item { Layout.preferredHeight: 4 }
-
-                                InfoRow { label: "Revenue"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.totalRevenue : undefined) }
-                                InfoRow { label: "Net Income"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.netIncomeToCommon : undefined) }
-                                InfoRow { label: "Profit Margin"; value: fmtPercent(companyInfo.financials ? companyInfo.financials.profitMargins : undefined) }
-                                InfoRow { label: "Revenue Growth"; value: fmtPercent(companyInfo.financials ? companyInfo.financials.revenueGrowth : undefined) }
-                                InfoRow { label: "EBITDA"; value: fmtLarge(companyInfo.financials ? companyInfo.financials.ebitda : undefined) }
                             }
                         }
                     }
@@ -471,27 +509,24 @@ ApplicationWindow {
         }
     }
 
-    // ----- Yardımcı Bileşen: Bilgi satırı -----
+    // ----- Yardımcı Bileşen: Bilgi satırı (label sol, değer sağa dayalı) -----
     component InfoRow: RowLayout {
         property string label: ""
         property string value: "—"
-        spacing: 8
 
         Label {
             text: parent.label
             font.pixelSize: 12
             color: lightMode ? "#888888" : "#aaaaaa"
-            Layout.preferredWidth: 90
         }
+
+        Item { Layout.fillWidth: true }
 
         Label {
             text: parent.value
             font.pixelSize: 13
             font.bold: true
             color: textColor
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignRight
-            elide: Text.ElideRight
         }
     }
 }
